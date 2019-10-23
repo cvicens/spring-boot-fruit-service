@@ -5,7 +5,7 @@ metadata:
 projects:
   - name: fruit-service
     source:
-      location: 'https://github.com/cvicens/fruit-service'
+      location: 'https://github.com/cvicens/spring-boot-fruit-service'
       type: git
       branch: master
 components:
