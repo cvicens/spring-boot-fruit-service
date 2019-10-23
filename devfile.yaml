@@ -1,11 +1,11 @@
 ---
 apiVersion: 1.0.0
 metadata:
-  generateName: atomic-fruit-service-
+  generateName: fruit-service-
 projects:
-  - name: atomic-fruit-service
+  - name: fruit-service
     source:
-      location: 'https://github.com/cvicens/atomic-fruit-service'
+      location: 'https://github.com/cvicens/fruit-service'
       type: git
       branch: master
 components:
