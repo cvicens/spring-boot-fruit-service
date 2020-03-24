@@ -167,7 +167,7 @@ spec:
           value: >-
             -Dsun.zip.disableMemoryMapping=true -Xms20m
             -Djava.security.egd=file:/dev/./urandom
-            -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+            -XX:+UnlockExperimentalVMOptions
             -Dsun.zip.disableMemoryMapping=true'
         - name: APP_BASE
           value: "apps.cluster-kharon-d762.kharon-d762.example.opentlc.com"
