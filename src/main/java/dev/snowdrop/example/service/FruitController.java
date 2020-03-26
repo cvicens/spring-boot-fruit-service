@@ -36,6 +36,8 @@ import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.micrometer.core.instrument.Metrics;
+
 @RestController
 @RequestMapping(value = "/api/fruits")
 public class FruitController {
@@ -48,6 +50,10 @@ public class FruitController {
 
     @GetMapping("/{id}")
     public Fruit get(@PathVariable("id") Integer id) {
+        // >>> Prometheus metric
+        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
+            "/inventory/" + id).increment();
+        // <<< Prometheus metric
         verifyFruitExists(id);
 
         return repository.findById(id).get();
@@ -55,6 +61,10 @@ public class FruitController {
 
     @GetMapping
     public List<Fruit> getAll() {
+        // Prometheus metric
+        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
+        "/inventory").increment();
+        // <<< Prometheus metric
         Spliterator<Fruit> fruits = repository.findAll()
                 .spliterator();
 
