@@ -10,6 +10,8 @@ spec:
     - interval: 30s
       path: /actuator/prometheus
       port: http
+  namespaceSelector:
+    any: true
   selector:
     matchLabels:
       monitored: prometheus
