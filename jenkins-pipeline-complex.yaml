@@ -109,7 +109,11 @@ spec:
                         def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --initial-delay-seconds=10" )
                         echo "After set probe readiness: ${readiness.out}"
                         def partOfLabel = openshift.raw( "label dc/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app" )
-                        echo "After label part-of partOfLabel: ${partOfLabel.out}"
+                        echo "After label part-of: ${partOfLabel.out}"
+                        def runtimeLabel = openshift.raw( "label dc/${APP_NAME} app.openshift.io/runtime=spring" )
+                        echo "After label runtime: ${runtimeLabel.out}"
+                        def connectsToAnnotation = openshift.raw( "annotate dc/${APP_NAME} app.openshift.io/connects-to=my-database" )
+                        echo "After annotate connects-to: ${connectsToAnnotation.out}"
                     }
                   }
                 }
@@ -154,7 +158,11 @@ spec:
                         def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --initial-delay-seconds=10" )
                         echo "After set probe readiness: ${readiness.out}"
                         def partOfLabel = openshift.raw( "label dc/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app" )
-                        echo "After label part-of partOfLabel: ${partOfLabel.out}"
+                        echo "After label part-of: ${partOfLabel.out}"
+                        def runtimeLabel = openshift.raw( "label dc/${APP_NAME} app.openshift.io/runtime=spring" )
+                        echo "After label runtime: ${runtimeLabel.out}"
+                        def connectsToAnnotation = openshift.raw( "annotate dc/${APP_NAME} app.openshift.io/connects-to=my-database" )
+                        echo "After annotate connects-to: ${connectsToAnnotation.out}"
                     }
                   }
                 }
@@ -169,8 +177,6 @@ spec:
             -Djava.security.egd=file:/dev/./urandom
             -XX:+UnlockExperimentalVMOptions
             -Dsun.zip.disableMemoryMapping=true'
-        - name: APP_BASE
-          value: "apps.cluster-kharon-d762.kharon-d762.example.opentlc.com"
         - name: LAB_INFRA_PROJECT_NAME
           value: "lab-infra"
         - name: APP_NAME

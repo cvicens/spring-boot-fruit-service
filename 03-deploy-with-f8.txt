@@ -2,11 +2,16 @@ Go to pom.xml and check the value of openjdk18-openshift.version => 1.4
 
 Deploy with f8
 
-oc new-project fruit-service-java-version
+#oc new-project fruit-service-java-version
 
-oc new-app -e POSTGRESQL_USER=luke -ePOSTGRESQL_PASSWORD=secret -ePOSTGRESQL_DATABASE=my_data centos/postgresql-10-centos7 --name=my-database -n fruit-service-java-version
+#oc new-app -e POSTGRESQL_USER=luke -ePOSTGRESQL_PASSWORD=secret -ePOSTGRESQL_DATABASE=my_data centos/postgresql-10-centos7 --name=my-database -n fruit-service-java-version
+
+oc project ${DEV_PROJECT}
 
 mvn clean fabric8:deploy -DskipTests -Popenshift
+oc label dc/fruit-service-dev app.kubernetes.io/part-of=fruit-service-app -n ${DEV_PROJECT} && \
+oc label dc/fruit-service-dev app.openshift.io/runtime=spring --overwrite=true -n ${DEV_PROJECT} && \
+oc annotate dc/fruit-service-dev app.openshift.io/connects-to=my-database -n ${DEV_PROJECT} 
 
 oc get route fruit-service ==> use it in the next command in a new terminal window
 

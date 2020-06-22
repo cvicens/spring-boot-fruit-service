@@ -9,13 +9,16 @@ spec:
         - env:
             - name: DB_USERNAME
               valueFrom:
-                 secretKeyRef:
+                secretKeyRef:
                    name: my-database-secret
                    key: user
             - name: DB_PASSWORD
               valueFrom:
-                 secretKeyRef:
-                   name: my-database-secret
-                   key: password
+                secretKeyRef:
+                  name: my-database-secret
+                  key: password
             - name: JAVA_OPTIONS
-              value: "-Dspring.profiles.active=openshift"
+              valueFrom:
+                configMapKeyRef:
+                  name: fruit-service-configmap
+                  key: java-options
