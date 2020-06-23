@@ -44,20 +44,9 @@ import io.micrometer.core.instrument.Metrics;
 public class FruitController {
 
     private final FruitRepository repository;
-    private static Integer DELAY_IN_MILLISECONDS = 0;
 
     public FruitController(FruitRepository repository) {
         this.repository = repository;
-    }
-
-    @GetMapping("/delay/{delayInMilliseconds}")
-    public String delay(@PathVariable("delayInMilliseconds") Integer delayInMilliseconds) {
-        if (delayInMilliseconds < 0 || delayInMilliseconds > 30*1000) {
-            return "DELAY_IN_MILLISECONDS not set argument must be > 0 and <= 30";
-        }
-        DELAY_IN_MILLISECONDS = delayInMilliseconds;        
-
-        return "DELAY_IN_MILLISECONDS set to " + DELAY_IN_MILLISECONDS;
     }
 
     @GetMapping("/{id}")
@@ -68,7 +57,7 @@ public class FruitController {
         // <<< Prometheus metric
         verifyFruitExists(id);
 
-        timeOut(DELAY_IN_MILLISECONDS);
+        timeOut();
 
         return repository.findById(id).get();
     }
@@ -82,7 +71,7 @@ public class FruitController {
         Spliterator<Fruit> fruits = repository.findAll()
                 .spliterator();
 
-        timeOut(DELAY_IN_MILLISECONDS);
+        timeOut();
 
         return StreamSupport
                 .stream(fruits, false)
@@ -94,7 +83,7 @@ public class FruitController {
     public Fruit post(@RequestBody(required = false) Fruit fruit) {
         verifyCorrectPayload(fruit);
 
-        timeOut(DELAY_IN_MILLISECONDS);
+        timeOut();
 
         return repository.save(fruit);
     }
@@ -107,7 +96,7 @@ public class FruitController {
 
         fruit.setId(id);
 
-        timeOut(DELAY_IN_MILLISECONDS);
+        timeOut();
         
         return repository.save(fruit);
     }
@@ -118,8 +107,8 @@ public class FruitController {
         verifyFruitExists(id);
 
         repository.deleteById(id);
-        
-        timeOut(DELAY_IN_MILLISECONDS);
+
+        timeOut();
     }
 
     private void verifyFruitExists(Integer id) {
@@ -142,9 +131,9 @@ public class FruitController {
         }
     }
 
-    private void timeOut(Integer timeInMillis) {
+    private void timeOut() {
         try {
-			TimeUnit.MILLISECONDS.sleep(DELAY_IN_MILLISECONDS);
+			TimeUnit.MILLISECONDS.sleep(SetupController.getDelayInMilliseconds());
 		} catch (InterruptedException e) {
 		}
     }
