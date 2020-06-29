@@ -302,9 +302,9 @@ time curl -vs http://${INGRESS_ROUTE_HOST}/api/fruits
 
 It should around 0+ seconds
 
-## Adding a CB 
+## Adding a Circuit Breaker to our service
 
-Let's break the service
+Circuit Breaking configuration is set at the DestinationRule level.
 
 ```sh
 cat << EOF | oc -n ${DEV_PROJECT} apply -f -
@@ -327,11 +327,54 @@ spec:
         tcp:
           maxConnections: 10
       outlierDetection:
-        baseEjectionTime: 120.000s
-        consecutiveErrors: 1
-        interval: 1.000s
+        consecutive5xxErrors: 2
+        interval: 30s
+        baseEjectionTime: 90s
         maxEjectionPercent: 100
 EOF
 ```
 
+Now set replicas to two... we want to set a pod in error state but the other one in normal state.
 
+```sh
+oc scale --replicas=2 deployment fruit-service-git -n ${DEV_PROJECT}
+```
+
+Let's set one of the pods in error state
+
+```sh
+curl http://${INGRESS_ROUTE_HOST}/setup/error && echo
+```
+
+## Update our Virtual Service to point to the DR subset v1
+
+```sh
+cat << EOF | oc -n ${DEV_PROJECT} apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ${VIRTUAL_SERVICE_NAME}
+  namespace: ${DEV_PROJECT}
+spec:
+  hosts:
+  - "${INGRESS_ROUTE_HOST}"
+  - fruit-service-git.${DEV_PROJECT}.svc.cluster.local
+  gateways:
+  - fruit-service-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/fruits
+        - uri:
+            prefix: /setup
+        - uri:
+            exact: /
+      route:
+        - destination:
+            host: fruit-service-git
+            port:
+              number: 8080
+            subset: v1
+      timeout: 1.000s
+EOF
+```

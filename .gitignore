@@ -10,3 +10,5 @@ target
 .project
 bin
 tmp
+
+old/
