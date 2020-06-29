@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SetupController {
 
     private static Integer DELAY_IN_MILLISECONDS = 0;
+    private static Boolean THROW_ERRORS = false;
 
     public SetupController() {
     }
@@ -33,14 +34,39 @@ public class SetupController {
     @GetMapping("/delay/{delayInMilliseconds}")
     public String delay(@PathVariable("delayInMilliseconds") Integer delayInMilliseconds) {
         if (delayInMilliseconds < 0 || delayInMilliseconds > 30*1000) {
-            return "DELAY_IN_MILLISECONDS not set argument must be > 0 and <= 30";
+            return "DELAY_IN_MILLISECONDS argument must be >= 0 and <= 30000";
         }
         DELAY_IN_MILLISECONDS = delayInMilliseconds;        
 
         return "DELAY_IN_MILLISECONDS set to " + DELAY_IN_MILLISECONDS;
     }
 
+    @GetMapping("/fix/error")
+    public String fixError() {
+        THROW_ERRORS = false;
+
+        return "THROW_ERRORS set to false";
+    }
+
+    @GetMapping("/fix/delay")
+    public String fixDelay() {
+        DELAY_IN_MILLISECONDS = 0;        
+
+        return "DELAY_IN_MILLISECONDS fixed";
+    }
+
+    @GetMapping("/error")
+    public String error() {
+        THROW_ERRORS = true;
+
+        return "THROW_ERRORS set true ";
+    }
+
     public static Integer getDelayInMilliseconds() {
         return DELAY_IN_MILLISECONDS;
+    }
+
+    public static Boolean getThrowErrors() {
+        return THROW_ERRORS;
     }
 }

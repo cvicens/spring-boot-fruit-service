@@ -25,16 +25,18 @@ oc delete project ${TEST_PROJECT}
     Java 8
     General Application: fruit-service-app 
     Name: fruit-service-git
-    Check Deployment Config
+    Check Deployment <===
     Click on Deployment to add env variables
     - DB_USERNAME from secret my-database...
     - DB_PASSWORD 
     - JAVA_OPTIONS: -Dspring.profiles.active=openshift
+    Click on labels
+    - app=fruit-service-git version=1.0.0
 
 ### DECORATE DATABASE AND GIT DEPLOYMENT
 
-oc label dc/fruit-service-git app.openshift.io/runtime=spring --overwrite=true -n ${DEV_PROJECT} && \
-oc annotate dc/fruit-service-git app.openshift.io/connects-to=my-database --overwrite=true -n ${DEV_PROJECT} && \
+oc label deployment/fruit-service-git app.openshift.io/runtime=spring --overwrite=true -n ${DEV_PROJECT} && \
+oc annotate deployment/fruit-service-git app.openshift.io/connects-to=my-database --overwrite=true -n ${DEV_PROJECT} && \
 oc label dc/my-database app.kubernetes.io/part-of=fruit-service-app --overwrite=true -n ${DEV_PROJECT} && \
 oc label dc/my-database app.openshift.io/runtime=postgresql --overwrite=true -n ${DEV_PROJECT}
 
@@ -53,9 +55,8 @@ oc annotate dc/fruit-service-dev app.openshift.io/connects-to=my-database --over
 ## COMPLETE PIPELINE
 
 ### PROJECTS
-
-oc new-project ${DEV_PROJECT}
 oc new-project ${TEST_PROJECT}
+oc new-project ${DEV_PROJECT}
 
 ### DEPLOY JENKINS
 #oc new-app jenkins-ephemeral -p MEMORY_LIMIT=3Gi -p JENKINS_IMAGE_STREAM_TAG=jenkins:4.2.5 -n ${DEV_PROJECT}

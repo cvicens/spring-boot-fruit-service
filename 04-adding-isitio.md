@@ -9,7 +9,8 @@
 export DEV_PROJECT=fruit-service-dev
 export TEST_PROJECT=fruit-service-test
 export SMCP_PROJECT=fruit-smcp
-export VIRTUAL_SERVICE_NAME=fruit-service-default
+export VIRTUAL_SERVICE_NAME=fruit-service-git
+export DESTINATION_RULE_NAME=fruit-service-git
 ```
 
 ## Create Service Mesh Control Plane
@@ -106,9 +107,8 @@ This should take about 1 minute to finish.
 Next, let’s add sidecars to our services and wait for them to be re-deployed:
 
 ```sh
-oc patch dc/fruit-service -n ${DEV_PROJECT} --type='json' -p '[{"op":"add","path":"/spec/template/metadata/annotations", "value": {"sidecar.istio.io/inject": "'"true"'"}}]' && \
-oc rollout latest dc/fruit-service -n ${DEV_PROJECT} && \
-oc rollout status -w dc/fruit-service -n ${DEV_PROJECT}
+oc patch deployment/fruit-service-git -n ${DEV_PROJECT} --type='json' -p '[{"op":"add","path":"/spec/template/metadata/annotations", "value": {"sidecar.istio.io/inject": "'"true"'"}}]' && \
+oc rollout status -w deployment/fruit-service-git -n ${DEV_PROJECT}
 ```
 
 ## Adapt Kubernetes Service object for Istio
@@ -121,12 +121,19 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    openshift.io/generated-by: OpenShiftNewApp
+    app.openshift.io/vcs-ref: master
+    app.openshift.io/vcs-uri: https://github.com/cvicens/spring-boot-fruit-service
+    openshift.io/generated-by: OpenShiftWebConsole
   labels:
-    app: fruit-service
-    app.kubernetes.io/component: fruit-service
-    app.kubernetes.io/instance: fruit-service
-  name: fruit-service
+    app: fruit-service-git
+    app.kubernetes.io/component: fruit-service-git
+    app.kubernetes.io/instance: fruit-service-git
+    app.kubernetes.io/name: java
+    app.kubernetes.io/part-of: fruit-service-app
+    app.openshift.io/runtime: java
+    app.openshift.io/runtime-version: "8"
+    version: 1.0.0
+  name: fruit-service-git
   namespace: ${DEV_PROJECT}
 spec:
   ports:
@@ -143,7 +150,8 @@ spec:
     protocol: TCP
     targetPort: 8778
   selector:
-    deploymentconfig: fruit-service
+    app: fruit-service-git
+    deploymentconfig: fruit-service-git
   sessionAffinity: None
   type: ClusterIP
 EOF
@@ -187,21 +195,46 @@ metadata:
 spec:
   hosts:
   - "${INGRESS_ROUTE_HOST}"
+  - fruit-service-git.${DEV_PROJECT}.svc.cluster.local
   gateways:
   - fruit-service-gateway
   http:
     - match:
         - uri:
-            exact: /api/fruits
+            prefix: /api/fruits
+        - uri:
+            prefix: /setup
         - uri:
             exact: /
       route:
         - destination:
-            host: fruit-service
+            host: fruit-service-git
             port:
               number: 8080
 EOF
 ```
+
+Let's test the virtual service we just created.
+
+```sh
+curl -vs http://${INGRESS_ROUTE_HOST}/api/fruits
+```
+
+## Break the service by adding a delay
+
+Set delay to 2000 (2s) more than Virtual Service timeout (1s) and less than the readiness probe timeout (3s)
+
+```sh
+curl http://${INGRESS_ROUTE_HOST}/setup/delay/2000 && echo
+```
+
+Check delay
+
+```sh
+time curl -vs http://${INGRESS_ROUTE_HOST}/api/fruits
+```
+
+It should around 2+ seconds
 
 ## Add timeout to our Virtual Service
 
@@ -217,17 +250,20 @@ metadata:
 spec:
   hosts:
   - "${INGRESS_ROUTE_HOST}"
+  - fruit-service-git.${DEV_PROJECT}.svc.cluster.local
   gateways:
   - fruit-service-gateway
   http:
     - match:
         - uri:
-            exact: /api/fruits
+            prefix: /api/fruits
+        - uri:
+            prefix: /setup
         - uri:
             exact: /
       route:
         - destination:
-            host: fruit-service
+            host: fruit-service-git
             port:
               number: 8080
       timeout: 1.000s
@@ -239,5 +275,63 @@ Have a look in Kiali:
 ```sh
 export KIALI_ROUTE_HOST=$(oc get route/kiali -o json -n $SMCP_PROJECT | jq -r '.status.ingress[0].host')
 
-echo https://${KIALI_ROUTE_HOST}/console/namespaces/${DEV_PROJECT}/istio/virtualservices/${VIRTUAL_SERVICE_NAME}?list=overview
+echo "open https://${KIALI_ROUTE_HOST}/console/namespaces/${DEV_PROJECT}/istio/virtualservices/${VIRTUAL_SERVICE_NAME}?list=overview"
 ```
+
+Check delay
+
+```sh
+time curl -vs http://${INGRESS_ROUTE_HOST}/api/fruits
+```
+
+Now timeout is 1+ seconds... but you get a 504 error.
+
+## Fix the service by setting delay to zero
+
+Set delay to 2000 (2s) more than Virtual Service timeout (1s) and less than the readiness probe timeout (3s)
+
+```sh
+curl http://${INGRESS_ROUTE_HOST}/setup/delay/0 && echo
+```
+
+Check delay
+
+```sh
+time curl -vs http://${INGRESS_ROUTE_HOST}/api/fruits
+```
+
+It should around 0+ seconds
+
+## Adding a CB 
+
+Let's break the service
+
+```sh
+cat << EOF | oc -n ${DEV_PROJECT} apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: ${DESTINATION_RULE_NAME}
+spec:
+  host: fruit-service-git
+  subsets:
+  - name: v1
+    labels:
+      app: fruit-service-git
+      version: 1.0.0
+    trafficPolicy:
+      connectionPool:
+        http:
+          http1MaxPendingRequests: 1
+          maxRequestsPerConnection: 2
+        tcp:
+          maxConnections: 10
+      outlierDetection:
+        baseEjectionTime: 120.000s
+        consecutiveErrors: 1
+        interval: 1.000s
+        maxEjectionPercent: 100
+EOF
+```
+
+

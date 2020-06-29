@@ -12,6 +12,7 @@ spec:
             
         //def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"
         def mvnCmd = "mvn"
+        def POM_VERSION = "0.0.0"
 
         pipeline {
           agent {
@@ -21,6 +22,11 @@ spec:
             stage('Checkout') {
               steps {
                 git url: "${GIT_URL}", branch: "${GIT_REF}"
+                script {
+                  def pom = readMavenPom file: 'pom.xml'
+                  POM_VERSION = pom.version
+                  print "POM_VERSION = ${POM_VERSION}"
+                }
               }
             }
             
@@ -82,7 +88,7 @@ spec:
                 script {
                   dir("${CONTEXT_DIR}") {
                     openshift.withCluster() {
-                        openshift.selector("bc", "${BUILD_NAME}").startBuild("--from-file=./target/${APP_NAME}-${APP_VERSION}.jar", "--wait")
+                        openshift.selector("bc", "${BUILD_NAME}").startBuild("--from-file=./target/${APP_NAME}-dev-${POM_VERSION}.jar", "--wait")
                     }      
                   }
                 }
@@ -103,10 +109,10 @@ spec:
                 script {
                   openshift.withCluster() {
                     openshift.withProject("${DEV_PROJECT_NAME}") {
-                        openshift.newApp("${DEV_PROJECT_NAME}/${BUILD_NAME}:latest", "--name=${APP_NAME} -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift").narrow('svc').expose()
+                        openshift.newApp("${DEV_PROJECT_NAME}/${BUILD_NAME}:latest", "--name=${APP_NAME} -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins").narrow('svc').expose()
                         def liveness = openshift.raw( "set probe dc/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180" )
                         echo "After set probe liveness: ${liveness.out}"
-                        def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --initial-delay-seconds=10" )
+                        def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10" )
                         echo "After set probe readiness: ${readiness.out}"
                         def partOfLabel = openshift.raw( "label dc/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app" )
                         echo "After label part-of: ${partOfLabel.out}"
@@ -152,10 +158,10 @@ spec:
                 script {
                   openshift.withCluster() {
                     openshift.withProject("${TEST_PROJECT_NAME}") {
-                        openshift.newApp("${DEV_PROJECT_NAME}/${BUILD_NAME}:test", "--name=${APP_NAME} -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift").narrow('svc').expose()
+                        openshift.newApp("${DEV_PROJECT_NAME}/${BUILD_NAME}:test", "--name=${APP_NAME} -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins").narrow('svc').expose()
                         def liveness = openshift.raw( "set probe dc/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180" )
                         echo "After set probe liveness: ${liveness.out}"
-                        def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --initial-delay-seconds=10" )
+                        def readiness = openshift.raw( "set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10" )
                         echo "After set probe readiness: ${readiness.out}"
                         def partOfLabel = openshift.raw( "label dc/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app" )
                         echo "After label part-of: ${partOfLabel.out}"

@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Objects;
@@ -51,6 +52,10 @@ public class FruitController {
 
     @GetMapping("/{id}")
     public Fruit get(@PathVariable("id") Integer id) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
         // >>> Prometheus metric
         Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
             "/inventory/" + id).increment();
@@ -64,6 +69,10 @@ public class FruitController {
 
     @GetMapping
     public List<Fruit> getAll() {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
         // Prometheus metric
         Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
         "/inventory").increment();
@@ -81,6 +90,10 @@ public class FruitController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public Fruit post(@RequestBody(required = false) Fruit fruit) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
         verifyCorrectPayload(fruit);
 
         timeOut();
@@ -91,19 +104,27 @@ public class FruitController {
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/{id}")
     public Fruit put(@PathVariable("id") Integer id, @RequestBody(required = false) Fruit fruit) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
         verifyFruitExists(id);
         verifyCorrectPayload(fruit);
 
         fruit.setId(id);
 
         timeOut();
-        
+
         return repository.save(fruit);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Integer id) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+        
         verifyFruitExists(id);
 
         repository.deleteById(id);
@@ -129,6 +150,14 @@ public class FruitController {
         if (!Objects.isNull(fruit.getId())) {
             throw new UnprocessableEntityException("Id field must be generated");
         }
+    }
+
+    private void throwInternalServerError() throws ResponseStatusException {
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private boolean checkThrowErrors() {
+        return SetupController.getThrowErrors();
     }
 
     private void timeOut() {
