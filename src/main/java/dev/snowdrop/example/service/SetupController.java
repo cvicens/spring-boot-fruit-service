@@ -38,7 +38,7 @@ public class SetupController {
         }
         DELAY_IN_MILLISECONDS = delayInMilliseconds;        
 
-        return "DELAY_IN_MILLISECONDS set to " + DELAY_IN_MILLISECONDS;
+        return "DELAY_IN_MILLISECONDS set to " + DELAY_IN_MILLISECONDS + " for " + System.getenv("HOSTNAME");
     }
 
     @GetMapping("/fix/error")
@@ -59,7 +59,7 @@ public class SetupController {
     public String error() {
         THROW_ERRORS = true;
 
-        return "THROW_ERRORS set true ";
+        return "THROW_ERRORS set true for " + System.getenv("HOSTNAME");
     }
 
     public static Integer getDelayInMilliseconds() {
