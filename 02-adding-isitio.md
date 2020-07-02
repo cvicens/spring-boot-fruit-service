@@ -97,7 +97,7 @@ OpenShift Service Mesh requires that applications "opt-in" to being part of a se
 First, do the databases and wait for them to be re-deployed:
 
 ```sh
-oc patch dc/my-database -n ${DEV_PROJECT} --type='json' -p '[{"op":"add","path":"/spec/template/metadata/annotations", "value": {"sidecar.istio.io/inject": "'"true"'"}}]' && \
+oc patch dc/my-database -n ${DEV_PROJECT} --type='json' -p '[{"op":"add","path":"/spec/template/metadata/annotations", "value": {"sidecar.istio.io/inject": "'"true"'"}}]'
 oc rollout latest dc/my-database -n ${DEV_PROJECT} && \
 oc rollout status -w dc/my-database -n ${DEV_PROJECT}
 ```
@@ -322,14 +322,14 @@ spec:
     trafficPolicy:
       connectionPool:
         http:
-          http1MaxPendingRequests: 1
-          maxRequestsPerConnection: 2
+          http1MaxPendingRequests: 2
+          maxRequestsPerConnection: 10
         tcp:
           maxConnections: 10
       outlierDetection:
         consecutive5xxErrors: 2
-        interval: 30s
-        baseEjectionTime: 90s
+        interval: 10s
+        baseEjectionTime: 60s
         maxEjectionPercent: 100
 EOF
 ```
@@ -347,6 +347,8 @@ curl http://${INGRESS_ROUTE_HOST}/setup/error && echo
 ```
 
 ## Update our Virtual Service to point to the DR subset v1
+
+We point to a subset for which we have defined a Circuit Breaker.
 
 ```sh
 cat << EOF | oc -n ${DEV_PROJECT} apply -f -
@@ -378,3 +380,55 @@ spec:
       timeout: 1.000s
 EOF
 ```
+
+Let's send request to see how we stop seeing errors after some errors.
+
+```sh
+for i in {1..180}; do time curl -s http://${INGRESS_ROUTE_HOST}/api/fruits; echo; sleep 1; done
+```
+
+Let's remove errors completely by adding one retry.
+
+```sh
+cat << EOF | oc -n ${DEV_PROJECT} apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ${VIRTUAL_SERVICE_NAME}
+  namespace: ${DEV_PROJECT}
+spec:
+  hosts:
+  - "${INGRESS_ROUTE_HOST}"
+  - fruit-service-git.${DEV_PROJECT}.svc.cluster.local
+  gateways:
+  - fruit-service-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/fruits
+        - uri:
+            prefix: /setup
+        - uri:
+            exact: /
+      route:
+        - destination:
+            host: fruit-service-git
+            port:
+              number: 8080
+            subset: v1
+      timeout: 1.000s
+      retries:
+        attempts: 1
+        #perTryTimeout: 1s
+        retryOn: 5xx
+EOF
+```
+
+Let's send some more requests to see how we stop seeing any errors.
+
+> NOTE: Clear screen!
+
+```sh
+for i in {1..180}; do time curl -s http://${INGRESS_ROUTE_HOST}/api/fruits; echo; sleep 1; done
+```
+

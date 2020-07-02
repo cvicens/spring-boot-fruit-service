@@ -24,11 +24,11 @@ oc delete project ${TEST_PROJECT}
     Git Repo URL: https://github.com/cvicens/spring-boot-fruit-service
     Java 8
     General Application: fruit-service-app 
-    Name: fruit-service-git
+    Name: fruit-service-git <===
     Check Deployment <===
     Click on Deployment to add env variables
     - DB_USERNAME from secret my-database...
-    - DB_PASSWORD 
+    - DB_PASSWORD from secret my-database...
     - JAVA_OPTIONS: -Dspring.profiles.active=openshift
     Click on labels
     - app=fruit-service-git version=1.0.0
@@ -45,6 +45,8 @@ oc label dc/my-database app.openshift.io/runtime=postgresql --overwrite=true -n 
 Details bellow in section ### DEPLOY JENKINS
 
 ### DEPLOY WITH F8
+
+> CHECK JAVA VERSION (it should be 8): java -version
 
 oc project ${DEV_PROJECT}
 mvn clean fabric8:deploy -DskipTests -Popenshift
@@ -82,6 +84,31 @@ oc apply -n ${DEV_PROJECT} -f jenkins-pipeline-complex.yaml
 
 ### START PIPELINE
 oc start-build bc/fruit-service-pipeline-complex -n ${DEV_PROJECT}
+
+
+
+###### PROXY
+http_proxy=xxx.xxx.xxx.xxx:8080
+HTTP_PROXY=xxx.xxx.xxx.xxx:8080
+HTTPS_PROXY=xxx.xxx.xxx.xxx:8080
+NO_PROXY=localhost,127.0.0.1,.svc,.cluster.local,172.30.0.1
+JENKINS_JAVA_OVERRIDES='-Dhttp.proxyHost=xxx.xxx.xxx.xxx -Dhttp.proxyPort=8080 -Dhttps.proxyHost=xxx.xxx.xxx.xxx  -Dhttps.proxyPort=8080 -Dhttp.nonProxyHosts="localhost|127.*|*.svc|*.cluster.local|172.30.*"'
+
+
+- name: http_proxy
+  value: 'http://10.2.0.40:3128'
+- name: https_proxy
+  value: 'http://10.2.0.40:3128'
+- name: no_proxy
+  value: >-
+    10.2.10.0/28,.dcst.cartasi.local,localhost,kubernetes.default,.svc.cluster.local,127.,.svc,.cluster.local,172.30.
+- name: http_proxy
+  value: 'http://10.2.0.40:3128'
+- name: JENKINS_JAVA_OVERRIDES
+  value: >-
+    -Dhttp.proxyHost=10.2.0.40 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=10.2.0.40 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts='10.2.10.0/28|.dcst.cartasi.local|localhost|172.30.0.1|kubernetes.default'
+
+
 
 ===================== THE END =====================
 
