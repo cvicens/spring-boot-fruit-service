@@ -1,10 +1,18 @@
-## ENVIRONMENT
-export DEV_PROJECT=fruit-service-dev
-export TEST_PROJECT=fruit-service-test
+# Deploying the Spring Fruit Service in several ways
+
+## SETTING THE ENVIRONMENT
+
+```sh
+export DEV_PROJECT=fruits-dev
+export TEST_PROJECT=fruits-test
+```
 
 ## CLEAN BEFORE RUNNING THE DEMO
+
+```sh
 oc delete project ${DEV_PROJECT}
 oc delete project ${TEST_PROJECT}
+```
 
 ## [OPTIONAL] ADDITIONAL DEPLOYMENT TYPES
 
@@ -42,85 +50,125 @@ oc label dc/my-database app.openshift.io/runtime=postgresql --overwrite=true -n 
 
 ### DEPLOY JENKINS HERE TO SAVE TIME... 
 
-Details bellow in section ### DEPLOY JENKINS
+Details bellow in section **"DEPLOY JENKINS"** or do as follows:
+
+1. Log in as 'developer' in OCP web console.
+2. Change to DEVELOPER view and create project ${DEV_PROJECT}
+3. Add -> From Catalog
+4. CICD -> Jenkins then click on Instantiate Template
+   Memory Limit: 3Gi
+   Disable memory intensive administrative monitors: true
+   Allows use of Jenkins Update Center repository with invalid SSL certificate: true
 
 ### DEPLOY WITH F8
 
 > CHECK JAVA VERSION (it should be 8): java -version
 
+```sh
 oc project ${DEV_PROJECT}
 mvn clean fabric8:deploy -DskipTests -Popenshift
 oc label dc/fruit-service-dev app.kubernetes.io/part-of=fruit-service-app --overwrite=true -n ${DEV_PROJECT} && \
 oc label dc/fruit-service-dev app.openshift.io/runtime=spring --overwrite=true -n ${DEV_PROJECT} && \
 oc annotate dc/fruit-service-dev app.openshift.io/connects-to=my-database --overwrite=true -n ${DEV_PROJECT} 
+```
 
 ## COMPLETE PIPELINE
 
-### PROJECTS
+### CREATE PROJECTS
+
+> You should have created ${DEV_PROJECT} manually before... no problem with the expected error
+
+```sh
 oc new-project ${TEST_PROJECT}
 oc new-project ${DEV_PROJECT}
+```
 
 ### DEPLOY JENKINS
-#oc new-app jenkins-ephemeral -p MEMORY_LIMIT=3Gi -p JENKINS_IMAGE_STREAM_TAG=jenkins:4.2.5 -n ${DEV_PROJECT}
+
+```sh
 oc new-app jenkins-ephemeral -p MEMORY_LIMIT=3Gi -p JENKINS_IMAGE_STREAM_TAG=jenkins:2 -n ${DEV_PROJECT}
 oc label dc/jenkins app.openshift.io/runtime=jenkins --overwrite=true -n ${DEV_PROJECT} 
+```
 
-### DATABASES [SKIP IN DEV_PROJECT IF DONE BEFORE]
+### DATABASES [SKIP FOR DEV_PROJECT IF DONE BEFORE]
+
+Deploy DB in ${DEV_PROJECT}
+
+```sh
 oc new-app -e POSTGRESQL_USER=luke -ePOSTGRESQL_PASSWORD=secret -ePOSTGRESQL_DATABASE=my_data centos/postgresql-10-centos7 --name=my-database -n ${DEV_PROJECT}
 oc label dc/my-database app.kubernetes.io/part-of=fruit-service-app -n ${DEV_PROJECT} && \
 oc label dc/my-database app.openshift.io/runtime=postgresql --overwrite=true -n ${DEV_PROJECT} 
+```
 
+Deploy DB in ${TEST_PROJECT}
+
+```sh
 oc new-app -e POSTGRESQL_USER=luke -ePOSTGRESQL_PASSWORD=secret -ePOSTGRESQL_DATABASE=my_data centos/postgresql-10-centos7 --name=my-database -n ${TEST_PROJECT}
 oc label dc/my-database app.kubernetes.io/part-of=fruit-service-app -n ${TEST_PROJECT} && \
 oc label dc/my-database app.openshift.io/runtime=postgresql --overwrite=true -n ${TEST_PROJECT} 
+```
 
 ### SECURITY/ROLES
+
+```sh
 oc policy add-role-to-user edit system:serviceaccount:${DEV_PROJECT}:jenkins -n ${TEST_PROJECT} && \
 oc policy add-role-to-user view system:serviceaccount:${DEV_PROJECT}:jenkins -n ${TEST_PROJECT} && \
 oc policy add-role-to-user system:image-puller system:serviceaccount:${TEST_PROJECT}:default -n ${DEV_PROJECT}
+```
 
 ### CREATE PIPELINE
+
+```sh
 oc apply -n ${DEV_PROJECT} -f jenkins-pipeline-complex.yaml
+```
 
-### START PIPELINE
-oc start-build bc/fruit-service-pipeline-complex -n ${DEV_PROJECT}
+### START PIPELINE IF NO PROXY
+
+```sh
+oc start-build bc/fruit-service-pipeline-complex --env=DEV_PROJECT_NAME=${DEV_PROJECT} --env=TEST_PROJECT_NAME=${TEST_PROJECT} -n ${DEV_PROJECT}
+```
+
+### START PIPELINE IFPROXY
+
+```sh
+export HTTP_PROXY_HOST=10.2.0.40
+export HTTP_PROXY_PORT=3128
+export HTTPS_PROXY_HOST=10.2.0.40
+export HTTPS_PROXY_PORT=3128
+
+export KUBERNETES_HOST=172.30.0.1
+
+export NO_PROXY="${KUBERNETES_HOST},.cluster.local,.svc,10.0.0.0/16,10.128.0.0/14,10.2.10.0/28,127.0.0.1,172.30.0.0/16,api-int.ocp4.dcst.cartasi.local,dcst.cartasi.local,etcd-0.ocp4.dcst.cartasi.local,etcd-1.ocp4.dcst.cartasi.local,etcd-2.ocp4.dcst.cartasi.local,localhost"
+
+export NON_PROXY_HOSTS=$(echo ${NO_PROXY} | sed -e 's/,/|/g')
+
+export MAVEN_OPTS_BASE="-Dsun.zip.disableMemoryMapping=true -Xms20m -Djava.security.egd=file:/dev/./urandom -XX:+UnlockExperimentalVMOptions -Dsun.zip.disableMemoryMapping=true"
+
+export MAVEN_OPTS="${MAVEN_OPTS_BASE} -Dhttp.proxyHost=${HTTP_PROXY_HOST} -Dhttp.proxyPort=${HTTP_PROXY_PORT} -Dhttps.proxyHost=${HTTPS_PROXY_HOST} -Dhttps.proxyPort=${HTTPS_PROXY_PORT} -Dhttp.nonProxyHosts=\"${NON_PROXY_HOSTS}\""
+
+oc start-build bc/fruit-service-pipeline-complex \
+  --env=DEV_PROJECT_NAME=${DEV_PROJECT} --env=TEST_PROJECT_NAME=${TEST_PROJECT} \
+  --env=HTTP_PROXY="http://${HTTP_PROXY_HOST}:${HTTP_PROXY_PORT}" \
+  --env=HTTPS_PROXY="http://${HTTPS_PROXY_HOST}:${HTTPS_PROXY_PORT}" \
+  --env=NO_PROXY="${NO_PROXY}" \
+  --env=MAVEN_OPTS="${MAVEN_OPTS}" \
+  -n ${DEV_PROJECT}
+```
 
 
 
-###### PROXY
-http_proxy=xxx.xxx.xxx.xxx:8080
-HTTP_PROXY=xxx.xxx.xxx.xxx:8080
-HTTPS_PROXY=xxx.xxx.xxx.xxx:8080
-NO_PROXY=localhost,127.0.0.1,.svc,.cluster.local,172.30.0.1
-JENKINS_JAVA_OVERRIDES='-Dhttp.proxyHost=xxx.xxx.xxx.xxx -Dhttp.proxyPort=8080 -Dhttps.proxyHost=xxx.xxx.xxx.xxx  -Dhttps.proxyPort=8080 -Dhttp.nonProxyHosts="localhost|127.*|*.svc|*.cluster.local|172.30.*"'
 
 
-- name: http_proxy
-  value: 'http://10.2.0.40:3128'
-- name: https_proxy
-  value: 'http://10.2.0.40:3128'
-- name: no_proxy
-  value: >-
-    10.2.10.0/28,.dcst.cartasi.local,localhost,kubernetes.default,.svc.cluster.local,127.,.svc,.cluster.local,172.30.
-- name: http_proxy
-  value: 'http://10.2.0.40:3128'
-- name: JENKINS_JAVA_OVERRIDES
-  value: >-
-    -Dhttp.proxyHost=10.2.0.40 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=10.2.0.40 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts='10.2.10.0/28|.dcst.cartasi.local|localhost|172.30.0.1|kubernetes.default'
+# Troubleshooting Pipelines
+
+oc import-image jenkins-alt:4.3.26 --from=registry.redhat.io/openshift4/ose-jenkins:v4.3.26 --confirm --scheduled=true -n openshift
+
+jenkins-alt:4.3.26
+
+```sh
+oc import-image jenkins-alt:4.3.26 --from=registry.redhat.io/openshift4/ose-jenkins:v4.3.26 --confirm --scheduled=true -n openshift
+oc new-app jenkins-ephemeral -p MEMORY_LIMIT=3Gi -p JENKINS_IMAGE_STREAM_TAG=jenkins-alt:4.3.26 -n ${DEV_PROJECT}
+```
 
 
-
-===================== THE END =====================
-
-
-==> Cambiar pom.xml -> JDK version
-
-git commit -a -m "jdk 8:1.5"
-git push origin master
-
-oc start-build bc/fruit-service-pipeline-complex -n ${DEV_PROJECT}
-
-==> Probar jdk version en DEV antes de aprobar!
-
-==> Aprobar y probar jdk version en TEST
 

@@ -26,6 +26,7 @@ spec:
                   def pom = readMavenPom file: 'pom.xml'
                   POM_VERSION = pom.version
                   print "POM_VERSION = ${POM_VERSION}"
+                  sh "env"
                 }
               }
             }
