@@ -43,7 +43,7 @@ steps:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
     #version: '4.5'
-    cmd: 'new project $(TEST_PROJECT_NAME)'
+    cmd: 'new-project $(TEST_PROJECT_NAME)'
     condition: 'not_exists'
     resource: 'project $(TEST_PROJECT_NAME)'
 
