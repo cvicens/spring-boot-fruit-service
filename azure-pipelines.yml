@@ -14,7 +14,8 @@ steps:
   inputs:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
-    version: '4.5'
+    version: 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz'
+
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
