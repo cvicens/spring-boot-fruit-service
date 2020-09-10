@@ -61,6 +61,10 @@ jobs:
     name: echoDevProjectName
   - bash: |
       echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
+
+      echo "Build: $(Build)"
+      echo "agent: $(agent)"
+
       echo "$(Build.ArtifactStagingDirectory)"
       ls $(Build.ArtifactStagingDirectory)
       echo "$(agent.builddirectory)"
@@ -99,7 +103,7 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'package -DskipTests -Popenshift'
-    enabled: false
+    enabled: true
 
   - bash: |
       echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
