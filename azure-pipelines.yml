@@ -28,8 +28,15 @@ jobs:
   - bash: |
         echo "This is job Prepare."
         oc new-project ${DEV_PROJECT_NAME}
-        export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
-        echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
+        oc new-project ${TEST_PROJECT_NAME}
+    name: CreateProjects
+    env:
+      DEV_PROJECT_NAME: $(DEV_PROJECT_NAME)
+      TEST_PROJECT_NAME: $(TEST_PROJECT_NAME)
+  - bash: |
+      echo "This is job Prepare."
+      export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
+      echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]$PROJECT_NAME"
     name: DetermineResult
     env:
       DEV_PROJECT_NAME: $(DEV_PROJECT_NAME)
@@ -69,7 +76,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'get ns $(BUILD_NAME) -o name'
+      cmd: 'get ns $(DEV_PROJECT_NAME) -o name'
 
   - task: OcConditionalCmd@2
     inputs:
@@ -77,9 +84,9 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'new-project $(TEST_PROJECT_NAME)'
+      cmd: 'new-project $(DEV_PROJECT_NAME)'
       condition: 'not_exists'
-      resource: 'ns $(TEST_PROJECT_NAME)'
+      resource: 'ns $(DEV_PROJECT_NAME)'
 
   - task: oc-cmd@2
     inputs:
