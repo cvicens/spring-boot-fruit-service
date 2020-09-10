@@ -22,7 +22,7 @@ jobs:
       version: '4.5.9'
 
   - bash: |
-        echo "This is job Prepare."
+        echo "This is job Prepare. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)
         oc new-project ${DEV_PROJECT_NAME}
         oc new-project ${TEST_PROJECT_NAME}
     name: CreateProjects
@@ -77,6 +77,7 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'test'
+    enabled: false
   
   - task: Maven@3
     inputs:
@@ -88,11 +89,12 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'package -DskipTests -Popenshift'
+    enabled: false
 
   - bash: |
       ls $(agent.builddirectory)
       ls $(Build.ArtifactStagingDirectory)
-      echo "This is job Run. $(agent.builddirectory)"
+      echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
             echo "bc ${BUILD_NAME} doesn't exists"
