@@ -67,27 +67,27 @@ jobs:
       fi
     name: CheckProjects
 
-  #- task: Maven@3
-  #  inputs:
-  #    mavenPomFile: 'pom.xml'
-  #    mavenOptions: '-Xmx3072m'
-  #    javaHomeOption: 'JDKVersion'
-  #    jdkVersionOption: '1.8'
-  #    jdkArchitectureOption: 'x64'
-  #    publishJUnitResults: true
-  #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-  #    goals: 'test'
-  #
-  #- task: Maven@3
-  #  inputs:
-  #    mavenPomFile: 'pom.xml'
-  #    mavenOptions: '-Xmx3072m'
-  #    javaHomeOption: 'JDKVersion'
-  #    jdkVersionOption: '1.8'
-  #    jdkArchitectureOption: 'x64'
-  #    publishJUnitResults: true
-  #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-  #    goals: 'package -DskipTests -Popenshift'
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'test'
+  
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'package -DskipTests -Popenshift'
 
   - bash: |
       echo "This is job Run."
@@ -117,7 +117,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'start-build $(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --from-file=./target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(TEST_PROJECT_NAME)'
+      cmd: 'start-build $(BUILD_NAME) --from-file=./target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(DEV_PROJECT_NAME)'
 
 
 
