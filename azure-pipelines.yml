@@ -47,6 +47,14 @@ steps:
     condition: 'not_exists'
     resource: 'ns $(TEST_PROJECT_NAME)'
 
+- task: oc-cmd@2
+  inputs:
+    connectionType: 'OpenShift Connection Service'
+    openshiftService: 'OCP Cluster 1'
+    #version: '4.5'
+    cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(TEST_PROJECT_NAME)'
+    ignoreFlag: true
+
 - task: OcConditionalCmd@2
   inputs:
     connectionType: 'OpenShift Connection Service'
@@ -62,5 +70,6 @@ steps:
     openshiftService: 'OCP Cluster 1'
     #version: '4.5'
     cmd: 'start-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --from-file=./target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(TEST_PROJECT_NAME)'
+
 
 
