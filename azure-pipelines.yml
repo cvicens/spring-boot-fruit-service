@@ -34,20 +34,41 @@ jobs:
     
   - bash: |
       echo "This is job Prepare."
-      export OLD_VARIABLE="Hello World"
-      echo "##vso[task.setvariable variable=new_variable;]$OLD_VARIABLE"
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
-      echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]$PROJECT_NAME"
+      echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]$PROJECT_NAME"
+
+      if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
+      then
+            echo "${DEV_PROJECT_NAME} doesn't exists"
+            echo "##vso[task.setvariable variable=DevProjectFound;isOutput=true]false"
+      else
+            echo "${DEV_PROJECT_NAME} exists"
+            echo "##vso[task.setvariable variable=DevProjectFound;isOutput=true]true"
+      fi
     name: CheckProjects
-  - script: echo $(CheckProjects.new_variable)
-    name: echo_new_variable
-  - script: echo $(CheckProjects.myOutputVar2)
-    name: echovar2
+  - script: echo $(CheckProjects.DevProjectFound)
+    name: echoDevProjectFound
+  - script: echo $(CheckProjects.DevProjectFoundName)
+    name: echoDevProjectFoundName
 
 - job: Run
+  variables:
+    DevProjectExists: $[ dependencies.Prepare.outputs['CheckProjects.DevProjectFound'] ]
 
   steps:
-  
+  - script: echo $(DevProjectExists)
+    name: echoDevProjectExists
+  - bash: |
+      echo "This is job Run."
+      export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
+      if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
+      then
+            echo "${DEV_PROJECT_NAME} doesn't exists"
+      else
+            echo "${DEV_PROJECT_NAME} exists"
+      fi
+      echo "##vso[task.setvariable variable=devProjectFound;isOutput=true]$PROJECT_NAME"
+    name: CheckProjects
 
   #- task: Maven@3
   #  inputs:
