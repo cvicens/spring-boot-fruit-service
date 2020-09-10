@@ -20,10 +20,6 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       #version: 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz'
       version: '4.5.9'
-  - powershell: echo "##vso[task.setvariable variable=myOutputVar1;isOutput=true]this is the value"
-    name: setvarStep
-  - script: echo $(setvarStep.myOutputVar1)
-    name: echovar1
 
   - bash: |
         echo "This is job Prepare."
@@ -36,28 +32,29 @@ jobs:
       echo "This is job Prepare."
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
       echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]$PROJECT_NAME"
-
-      if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
-      then
-            echo "${DEV_PROJECT_NAME} doesn't exists"
-            echo "##vso[task.setvariable variable=DevProjectFound;isOutput=true]false"
-      else
-            echo "${DEV_PROJECT_NAME} exists"
-            echo "##vso[task.setvariable variable=DevProjectFound;isOutput=true]true"
-      fi
+      echo "##vso[task.setvariable variable=TestProjectFoundName;isOutput=true]`oc get ns ${TEST_PROJECT_NAME} -o name`"
+     
     name: CheckProjects
-  - script: echo $(CheckProjects.DevProjectFound)
-    name: echoDevProjectFound
+
   - script: echo $(CheckProjects.DevProjectFoundName)
     name: echoDevProjectFoundName
+  - script: echo $(CheckProjects.TestProjectFoundName)
+    name: echoTestProjectFoundName
 
 - job: Run
   variables:
-    DevProjectExists: $[ dependencies.Prepare.outputs['CheckProjects.DevProjectFound'] ]
+    DevProjectName: $[ dependencies.Prepare.outputs['CheckProjects.DevProjectFoundName'] ]
 
   steps:
-  - script: echo $(DevProjectExists)
-    name: echoDevProjectExists
+  - task: oc-setup@2
+    inputs:
+      connectionType: 'OpenShift Connection Service'
+      openshiftService: 'OCP Cluster 1'
+      #version: 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz'
+      version: '4.5.9'
+
+  - script: echo $(DevProjectName)
+    name: echoDevProjectName
   - bash: |
       echo "This is job Run."
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
