@@ -20,18 +20,17 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       #version: 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz'
       version: '4.5.9'
-  - powershell: echo "##vso[task.setvariable variable=myOutputVar;isOutput=true]this is the value"
+  - powershell: echo "##vso[task.setvariable variable=myOutputVar1;isOutput=true]this is the value"
     name: setvarStep
-  - script: echo $(setvarStep.myOutputVar)
+  - script: echo $(setvarStep.myOutputVar1)
     name: echovar1
 
   - bash: |
         echo "This is job Prepare."
-        cat /home/vsts/work/_temp/*.sh
         export PROJECT_NAME=$(oc get ns $(DEV_PROJECT_NAME) -o name)
-        echo "##vso[task.setvariable variable=myOutputVar;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
+        echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
     name: DetermineResult
-  - script: echo $(setvarStep.myOutputVar)
+  - script: echo $(setvarStep.myOutputVar2)
     name: echovar2
 
 - job: Run
