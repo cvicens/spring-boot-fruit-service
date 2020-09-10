@@ -76,6 +76,7 @@ jobs:
     name: CheckProjects
 
   - task: Maven@3
+    name: MavenTest
     inputs:
       mavenPomFile: 'pom.xml'
       mavenOptions: '-Xmx3072m'
@@ -88,6 +89,7 @@ jobs:
     enabled: false
   
   - task: Maven@3
+    name: MavenPackage
     inputs:
       mavenPomFile: 'pom.xml'
       mavenOptions: '-Xmx3072m'
@@ -101,13 +103,15 @@ jobs:
 
   - bash: |
       echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
+
       echo "ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
       ls $(Build.ArtifactStagingDirectory)
+
       echo "builddirectory: $(agent.builddirectory)"
       ls $(agent.builddirectory)
 
       echo "Build.BinariesDirectory: $(Build.BinariesDirectory)"
-      ls $(Build.BinariesDirectory)
+      ls $(Build.BinariesDirectory)/*
 
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
