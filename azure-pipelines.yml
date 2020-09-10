@@ -34,12 +34,14 @@ jobs:
     
   - bash: |
       echo "This is job Prepare."
+      export OLD_VARIABLE="Hello World"
+      echo "##vso[task.setvariable variable=new_variable;]$OLD_VARIABLE"
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
       echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]$PROJECT_NAME"
-    name: DetermineResult
-    env:
-      DEV_PROJECT_NAME: $(DEV_PROJECT_NAME)
-  - script: echo $(setvarStep.myOutputVar2)
+    name: CheckProjects
+  - script: echo $(CheckProjects.new_variable)
+    name: echo_new_variable
+  - script: echo $(CheckProjects.myOutputVar2)
     name: echovar2
 
 - job: Run
