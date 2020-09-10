@@ -27,9 +27,12 @@ jobs:
 
   - bash: |
         echo "This is job Prepare."
-        export PROJECT_NAME=$(oc get ns $(DEV_PROJECT_NAME) -o name)
+        oc new-project ${DEV_PROJECT_NAME}
+        export PROJECT_NAME=$(oc get ns ${DEV_PROJECT_NAME} -o name)
         echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
     name: DetermineResult
+    env:
+      DEV_PROJECT_NAME: $(DEV_PROJECT_NAME)
   - script: echo $(setvarStep.myOutputVar2)
     name: echovar2
 
@@ -84,7 +87,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(TEST_PROJECT_NAME)'
+      cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
 
   - task: OcConditionalCmd@2
@@ -93,7 +96,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(TEST_PROJECT_NAME)'
+      cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(DEV_PROJECT_NAME)'
       condition: 'not_exists'
       resource: 'bc $(BUILD_NAME) -n $(TEST_PROJECT_NAME)'
 
