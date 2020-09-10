@@ -90,7 +90,8 @@ jobs:
       goals: 'package -DskipTests -Popenshift'
 
   - bash: |
-      echo "This is job Run."
+      ls $(agent.builddirectory)
+      echo "This is job Run. $(agent.builddirectory)"
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
             echo "bc ${BUILD_NAME} doesn't exists"
