@@ -57,14 +57,14 @@ jobs:
     name: echoDevProjectName
   - bash: |
       echo "This is job Run."
-      export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
       if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
       then
             echo "${DEV_PROJECT_NAME} doesn't exists"
+            echo "##vso[task.setvariable variable=DevProjectExists]false"
       else
             echo "${DEV_PROJECT_NAME} exists"
+            echo "##vso[task.setvariable variable=DevProjectExists]true"
       fi
-      echo "##vso[task.setvariable variable=devProjectFound;isOutput=true]$PROJECT_NAME"
     name: CheckProjects
 
   #- task: Maven@3
@@ -89,23 +89,17 @@ jobs:
   #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
   #    goals: 'package -DskipTests -Popenshift'
 
-  - task: oc-cmd@2
-    inputs:
-      connectionType: 'OpenShift Connection Service'
-      openshiftService: 'OCP Cluster 1'
-      version: '4.5.9'
-      uselocalOc: true
-      cmd: 'get ns $(DEV_PROJECT_NAME) -o name'
-
-  - task: OcConditionalCmd@2
-    inputs:
-      connectionType: 'OpenShift Connection Service'
-      openshiftService: 'OCP Cluster 1'
-      version: '4.5.9'
-      uselocalOc: true
-      cmd: 'new-project $(DEV_PROJECT_NAME)'
-      condition: 'not_exists'
-      resource: 'ns $(DEV_PROJECT_NAME)'
+  - bash: |
+      echo "This is job Run."
+      if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
+      then
+            echo "bc ${BUILD_NAME} doesn't exists"
+            echo "##vso[task.setvariable variable=BuildConfigDoesntExists]true"
+      else
+            echo "bc ${BUILD_NAME} exists"
+            echo "##vso[task.setvariable variable=BuildConfigDoesntExists]false"
+      fi
+    name: CheckBuildConfig
 
   - task: oc-cmd@2
     inputs:
@@ -115,16 +109,7 @@ jobs:
       uselocalOc: true
       cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
-
-  - task: OcConditionalCmd@2
-    inputs:
-      connectionType: 'OpenShift Connection Service'
-      openshiftService: 'OCP Cluster 1'
-      version: '4.5.9'
-      uselocalOc: true
-      cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(DEV_PROJECT_NAME)'
-      condition: 'not_exists'
-      resource: 'bc $(BUILD_NAME) -n $(TEST_PROJECT_NAME)'
+    condition: $(CheckBuildConfig.BuildConfigDoesntExists)
 
   - task: oc-cmd@2
     inputs:
