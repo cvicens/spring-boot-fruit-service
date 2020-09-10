@@ -91,6 +91,7 @@ jobs:
 
   - bash: |
       ls $(agent.builddirectory)
+      ls $(Build.ArtifactStagingDirectory)
       echo "This is job Run. $(agent.builddirectory)"
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
@@ -118,7 +119,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'start-build $(BUILD_NAME) --from-file=$(agent.builddirectory)/target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(DEV_PROJECT_NAME)'
+      cmd: 'start-build $(BUILD_NAME) --from-file=$(Build.ArtifactStagingDirectory)/target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(DEV_PROJECT_NAME)'
 
 
 
