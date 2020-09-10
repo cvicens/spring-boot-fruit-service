@@ -15,6 +15,7 @@ steps:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
     #version: 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz'
+    version: '4.5.9'
 
 #- task: Maven@3
 #  inputs:
@@ -42,7 +43,8 @@ steps:
   inputs:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
-    #version: '4.5'
+    version: '4.5.9'
+    uselocalOc: true
     cmd: 'new-project $(TEST_PROJECT_NAME)'
     condition: 'not_exists'
     resource: 'ns $(TEST_PROJECT_NAME)'
@@ -51,7 +53,8 @@ steps:
   inputs:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
-    #version: '4.5'
+    version: '4.5.9'
+    uselocalOc: true
     cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(TEST_PROJECT_NAME)'
     ignoreFlag: true
 
@@ -59,7 +62,8 @@ steps:
   inputs:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
-    #version: '4.5'
+    version: '4.5.9'
+    uselocalOc: true
     cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(TEST_PROJECT_NAME)'
     condition: 'not_exists'
     resource: 'bc $(BUILD_NAME) -n $(TEST_PROJECT_NAME)'
@@ -68,7 +72,8 @@ steps:
   inputs:
     connectionType: 'OpenShift Connection Service'
     openshiftService: 'OCP Cluster 1'
-    #version: '4.5'
+    version: '4.5.9'
+    uselocalOc: true
     cmd: 'start-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --from-file=./target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(TEST_PROJECT_NAME)'
 
 
