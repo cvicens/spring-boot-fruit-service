@@ -28,7 +28,7 @@ jobs:
   - bash: |
         echo "This is job Prepare."
         oc new-project ${DEV_PROJECT_NAME}
-        export PROJECT_NAME=$(oc get ns ${DEV_PROJECT_NAME} -o name)
+        export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
         echo "##vso[task.setvariable variable=myOutputVar2;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
     name: DetermineResult
     env:
