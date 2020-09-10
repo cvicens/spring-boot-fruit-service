@@ -43,7 +43,7 @@ jobs:
 
 - job: Run
   variables:
-    DevProjectName: $[ dependencies.Prepare.outputs['CheckProjects.DevProjectFoundName'] ]
+    DevProjectName: $[ dependencies.Prepare.outputs['Prepare.CheckProjects.DevProjectFoundName'] ]
 
   steps:
   - task: oc-setup@2
