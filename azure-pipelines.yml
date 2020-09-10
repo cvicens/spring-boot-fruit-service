@@ -109,7 +109,7 @@ jobs:
       uselocalOc: true
       cmd: 'new-build --name=$(BUILD_NAME) --image-stream=$(BUILD_IMAGE_STREAM) --binary -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
-    condition: eq('${{ CheckBuildConfig.BuildConfigDoesntExists }}', true)
+    condition: eq('${{ variables['CheckBuildConfig.BuildConfigDoesntExists'] }}', true)
 
   - task: oc-cmd@2
     inputs:
