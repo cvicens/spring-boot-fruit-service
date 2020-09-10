@@ -27,9 +27,11 @@ jobs:
 
   - bash: |
         echo "This is job Prepare."
-        oc get 
-        echo "##vso[task.setvariable variable=doThing;isOutput=true]Yes" #set variable doThing to Yes
+        export PROJECT_NAME=$(get ns $(DEV_PROJECT_NAME) -o name)
+        echo "##vso[task.setvariable variable=myOutputVar;isOutput=true]${PROJECT_NAME}" #set variable doThing to Yes
     name: DetermineResult
+  - script: echo $(setvarStep.myOutputVar)
+    name: echovar
 
 - job: Run
 
