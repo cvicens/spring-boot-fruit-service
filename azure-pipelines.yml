@@ -101,10 +101,14 @@ jobs:
 
   - bash: |
       echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
-      echo "$(Build.ArtifactStagingDirectory)"
+      echo "ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
       ls $(Build.ArtifactStagingDirectory)
-      echo "$(agent.builddirectory)"
+      echo "builddirectory: $(agent.builddirectory)"
       ls $(agent.builddirectory)
+
+      echo "Build.BinariesDirectory: $(Build.BinariesDirectory)"
+      ls $(Build.BinariesDirectory)
+
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
             echo "bc ${BUILD_NAME} doesn't exists"
