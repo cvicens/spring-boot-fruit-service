@@ -29,7 +29,11 @@ jobs:
     continueOnError: true
     
   - bash: |
-      echo "This is job Prepare."
+      echo "This is job Prepare. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
+      echo "$(Build.ArtifactStagingDirectory)"
+      ls $(Build.ArtifactStagingDirectory)
+      echo "$(agent.builddirectory)"
+      ls $(agent.builddirectory)
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
       echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]$PROJECT_NAME"
       echo "##vso[task.setvariable variable=TestProjectFoundName;isOutput=true]`oc get ns ${TEST_PROJECT_NAME} -o name`"
@@ -56,7 +60,11 @@ jobs:
   - script: echo $(DevProjectName)
     name: echoDevProjectName
   - bash: |
-      echo "This is job Run."
+      echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
+      echo "$(Build.ArtifactStagingDirectory)"
+      ls $(Build.ArtifactStagingDirectory)
+      echo "$(agent.builddirectory)"
+      ls $(agent.builddirectory)
       if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
       then
             echo "${DEV_PROJECT_NAME} doesn't exists"
@@ -92,9 +100,11 @@ jobs:
     enabled: false
 
   - bash: |
-      ls $(agent.builddirectory)
-      ls $(Build.ArtifactStagingDirectory)
       echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
+      echo "$(Build.ArtifactStagingDirectory)"
+      ls $(Build.ArtifactStagingDirectory)
+      echo "$(agent.builddirectory)"
+      ls $(agent.builddirectory)
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
             echo "bc ${BUILD_NAME} doesn't exists"
