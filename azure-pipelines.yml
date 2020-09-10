@@ -30,9 +30,8 @@ jobs:
         oc new-project ${DEV_PROJECT_NAME}
         oc new-project ${TEST_PROJECT_NAME}
     name: CreateProjects
-    env:
-      DEV_PROJECT_NAME: $(DEV_PROJECT_NAME)
-      TEST_PROJECT_NAME: $(TEST_PROJECT_NAME)
+    continueOnError: true
+    
   - bash: |
       echo "This is job Prepare."
       export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
