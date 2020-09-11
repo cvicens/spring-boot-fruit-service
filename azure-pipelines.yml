@@ -26,24 +26,40 @@ jobs:
       version: '4.5.9'
 
   - bash: |
-        echo "This is job Prepare."
-        oc new-project ${DEV_PROJECT_NAME}
-        oc new-project ${TEST_PROJECT_NAME}
-    name: CreateProjects
-    continueOnError: true
-    
-  - bash: |
-      echo "This is job Prepare. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
-      echo "$(Build.ArtifactStagingDirectory)"
-      ls $(Build.ArtifactStagingDirectory)
-      echo "$(agent.builddirectory)"
-      ls $(agent.builddirectory)
-      export PROJECT_NAME=`oc get ns ${DEV_PROJECT_NAME} -o name`
-      echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]$PROJECT_NAME"
-      echo "##vso[task.setvariable variable=TestProjectFoundName;isOutput=true]`oc get ns ${TEST_PROJECT_NAME} -o name`"
-     
+      echo "This is job Prepare."
+      echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]`oc get ns ${DEV_PROJECT_NAME} -o name`"
+      echo "##vso[task.setvariable variable=TestProjectFoundName;isOutput=true]`oc get ns ${TEST_PROJECT_NAME} -o name`"   
+
+      if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
+      then
+            echo "${DEV_PROJECT_NAME} doesn't exists"
+            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]false"
+      else
+            echo "${DEV_PROJECT_NAME} exists"
+            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]true"
+      fi
+      if [ -z "`oc get ns ${TEST_PROJECT_NAME} -o name`" ]
+      then
+            echo "${TEST_PROJECT_NAME} doesn't exists"
+            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]false"
+      else
+            echo "${TEST_PROJECT_NAME} exists"
+            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]true"
+      fi
     name: CheckProjects
 
+  - bash: |
+        oc new-project ${DEV_PROJECT_NAME}
+    name: CreateDevProject
+    continueOnError: true
+    condition: eq(variables['CheckProjects.DevProjectExists'], false)
+  
+  - bash: |
+        oc new-project ${TEST_PROJECT_NAME}
+    name: CreateTestProject
+    continueOnError: true
+    condition: eq(variables['CheckProjects.TestProjectExists'], false)
+    
   - script: echo $(CheckProjects.DevProjectFoundName)
     name: echoDevProjectFoundName
   - script: echo $(CheckProjects.TestProjectFoundName)
