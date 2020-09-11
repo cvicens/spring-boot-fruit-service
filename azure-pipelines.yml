@@ -181,7 +181,7 @@ jobs:
       uselocalOc: true
       cmd: 'new-app --name=$(APP_NAME) -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
-    condition: eq(variables['CheckBuildConfig.DeploymentDoesntExists'], true)
+    condition: eq(variables['CheckDeployment.DeploymentDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(DEV_PROJECT_NAME)
