@@ -130,20 +130,9 @@ jobs:
     enabled: true
 
   - bash: |
-      echo "This is job Run. $(agent.builddirectory) $(Build.ArtifactStagingDirectory)"
-
-      echo "ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
-      ls $(Build.ArtifactStagingDirectory)
-
-      echo "builddirectory: $(agent.builddirectory)"
-      ls $(agent.builddirectory)
-
-      echo "Build.BinariesDirectory: $(Build.BinariesDirectory)"
-      ls $(Build.BinariesDirectory)/*
-
       if [ -z "`oc get bc ${BUILD_NAME} -o name`" ]
       then
-            echo "bc ${BUILD_NAME} doesn't exists"
+            echo "bc ${BUILD_NAME} doesn't exist"
             echo "##vso[task.setvariable variable=BuildConfigDoesntExists;isOutput=true]true"
       else
             echo "bc ${BUILD_NAME} exists"
@@ -152,6 +141,7 @@ jobs:
     name: CheckBuildConfig
 
   - task: oc-cmd@2
+    name: NewBuildConfig
     inputs:
       connectionType: 'OpenShift Connection Service'
       openshiftService: 'OCP Cluster 1'
@@ -161,7 +151,9 @@ jobs:
       ignoreFlag: true
     #condition: eq('${{ variables['CheckBuildConfig.BuildConfigDoesntExists'] }}', true)
     condition: eq(variables['CheckBuildConfig.BuildConfigDoesntExists'], true)
+
   - task: oc-cmd@2
+    name: StartBuild
     inputs:
       connectionType: 'OpenShift Connection Service'
       openshiftService: 'OCP Cluster 1'
@@ -169,5 +161,38 @@ jobs:
       uselocalOc: true
       cmd: 'start-build $(BUILD_NAME) --from-file=$(Build.Repository.LocalPath)/target/$(APP_NAME)-dev-$(POM_VERSION).jar --wait -n $(DEV_PROJECT_NAME)'
 
+  - bash: |
+      if [ -z "`oc get deployment ${APP_NAME} -o name`" ]
+      then
+            echo "deployment ${APP_NAME} doesn't exist"
+            echo "##vso[task.setvariable variable=DeploymentDoesntExists;isOutput=true]true"
+      else
+            echo "deployment ${APP_NAME} exists"
+            echo "##vso[task.setvariable variable=DeploymentDoesntExists;isOutput=true]false"
+      fi
+    name: CheckDeployment
 
+  - task: oc-cmd@2
+    name: NewDeployment
+    inputs:
+      connectionType: 'OpenShift Connection Service'
+      openshiftService: 'OCP Cluster 1'
+      version: '4.5.9'
+      uselocalOc: true
+      cmd: 'new-app --name=$(APP_NAME) -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(DEV_PROJECT_NAME)'
+      ignoreFlag: true
+    condition: eq(variables['CheckBuildConfig.DeploymentDoesntExists'], true)
 
+  - bash: |
+      oc set probe dc/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180
+      oc set probe dc/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10
+    name: AddDeploymentProbes
+
+  - bash: |
+      oc label dc/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app
+      oc label dc/${APP_NAME} app.openshift.io/runtime=spring
+      oc annotate dc/${APP_NAME} app.openshift.io/connects-to=my-database
+    name: AddDeploymentDecoration
+
+                        
+                        
