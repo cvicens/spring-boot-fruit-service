@@ -184,14 +184,14 @@ jobs:
     condition: eq(variables['CheckBuildConfig.DeploymentDoesntExists'], true)
 
   - bash: |
-      oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180
-      oc set probe deployment/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10
+      oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(DEV_PROJECT_NAME)
+      oc set probe deployment/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10 -n $(DEV_PROJECT_NAME)
     name: AddDeploymentProbes
 
   - bash: |
-      oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app
-      oc label deployment/${APP_NAME} app.openshift.io/runtime=spring
-      oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database
+      oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app -n $(DEV_PROJECT_NAME)
+      oc label deployment/${APP_NAME} app.openshift.io/runtime=spring -n $(DEV_PROJECT_NAME)
+      oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database -n $(DEV_PROJECT_NAME)
     name: AddDeploymentDecoration
 
                         
