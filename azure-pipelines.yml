@@ -32,7 +32,7 @@ jobs:
 
       if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
       then
-            echo "${DEV_PROJECT_NAME} doesn't exists"
+            echo "${DEV_PROJECT_NAME} doesn't exist"
             echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]false"
       else
             echo "${DEV_PROJECT_NAME} exists"
@@ -40,11 +40,11 @@ jobs:
       fi
       if [ -z "`oc get ns ${TEST_PROJECT_NAME} -o name`" ]
       then
-            echo "${TEST_PROJECT_NAME} doesn't exists"
-            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]false"
+            echo "${TEST_PROJECT_NAME} doesn't exist"
+            echo "##vso[task.setvariable variable=TestProjectExists;isOutput=true]false"
       else
             echo "${TEST_PROJECT_NAME} exists"
-            echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]true"
+            echo "##vso[task.setvariable variable=TestProjectExists;isOutput=true]true"
       fi
     name: CheckProjects
 
