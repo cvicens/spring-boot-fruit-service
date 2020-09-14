@@ -211,15 +211,15 @@ jobs:
       if [ -z "`oc get deployment ${APP_NAME} -o name`" ]
       then
             echo "deployment ${APP_NAME} doesn't exist"
-            echo "##vso[task.setvariable variable=DeploymentDoesntExists;isOutput=true]true"
+            echo "##vso[task.setvariable variable=DevDeploymentDoesntExists;isOutput=true]true"
       else
             echo "deployment ${APP_NAME} exists"
-            echo "##vso[task.setvariable variable=DeploymentDoesntExists;isOutput=true]false"
+            echo "##vso[task.setvariable variable=DevDeploymentDoesntExists;isOutput=true]false"
       fi
-    name: CheckDeployment
+    name: CheckDevDeployment
 
   - task: oc-cmd@2
-    name: NewDeployment
+    name: NewDevDeployment
     inputs:
       connectionType: 'OpenShift Connection Service'
       openshiftService: 'OCP Cluster 1'
@@ -227,18 +227,58 @@ jobs:
       uselocalOc: true
       cmd: 'new-app --name=$(APP_NAME) $(DEV_PROJECT_NAME)/$(BUILD_NAME):latest -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
-    condition: eq(variables['CheckDeployment.DeploymentDoesntExists'], true)
+    condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(DEV_PROJECT_NAME)
       oc set probe deployment/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10 -n $(DEV_PROJECT_NAME)
     name: AddDeploymentProbes
+    condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
 
   - bash: |
-      oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app -n $(DEV_PROJECT_NAME)
+      oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app -n ${DEV_PROJECT_NAME}
       oc label deployment/${APP_NAME} app.openshift.io/runtime=spring -n $(DEV_PROJECT_NAME)
-      oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database -n $(DEV_PROJECT_NAME)
+      oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database -n ${DEV_PROJECT_NAME}
     name: AddDeploymentDecoration
+    condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
+  - task: ManualIntervention@8
+    inputs:
+      instructions: 'Approve to promote to Test'
 
-                        
-                        
+  - bash: |
+      oc tag ${BUILD_NAME}:latest ${BUILD_NAME}:test
+    name: PromoteToTest
+
+  - bash: |
+      if [ -z "`oc get deployment ${APP_NAME} -o name -n ${TEST_PROJECT_NAME}`" ]
+      then
+            echo "deployment ${APP_NAME} doesn't exist"
+            echo "##vso[task.setvariable variable=TestDeploymentDoesntExists;isOutput=true]true"
+      else
+            echo "deployment ${APP_NAME} exists"
+            echo "##vso[task.setvariable variable=TestDeploymentDoesntExists;isOutput=true]false"
+      fi
+    name: CheckTestDeployment
+  - task: oc-cmd@2
+    name: NewTestDeployment
+    inputs:
+      connectionType: 'OpenShift Connection Service'
+      openshiftService: 'OCP Cluster 1'
+      version: '4.5.9'
+      uselocalOc: true
+      cmd: 'new-app --name=$(APP_NAME) $(DEV_PROJECT_NAME)/$(BUILD_NAME):test -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(TEST_PROJECT_NAME)'
+      ignoreFlag: true
+    condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
+
+  - bash: |
+      oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(TEST_PROJECT_NAME)
+      oc set probe deployment/${APP_NAME} --readiness --get-url=http://:8080/api/fruits --timeout-seconds=3 --initial-delay-seconds=10 -n $(TEST_PROJECT_NAME)
+    name: AddDeploymentProbesToTest
+    condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
+
+  - bash: |
+      oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app -n ${TEST_PROJECT_NAME}
+      oc label deployment/${APP_NAME} app.openshift.io/runtime=spring -n $(DEV_PROJECT_NAME)
+      oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database -n ${TEST_PROJECT_NAME}
+    name: AddDeploymentDecorationToTest
+    condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
