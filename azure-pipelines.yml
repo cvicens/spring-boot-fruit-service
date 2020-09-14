@@ -296,7 +296,7 @@ jobs:
 
   - bash: |
       oc expose svc/${APP_NAME} -n ${TEST_PROJECT_NAME}
-    name: ExposeDevSvc
+    name: ExposeTestSvc
     condition: eq(variables['CheckTestSvc.TestSvcDoesntExists'], true)
 
   - bash: |
