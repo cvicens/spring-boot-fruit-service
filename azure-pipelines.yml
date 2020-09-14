@@ -241,9 +241,6 @@ jobs:
       oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database --overwrite=true -n ${DEV_PROJECT_NAME}
     name: AddDeploymentDecorationToDev
     condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
-  - task: ManualIntervention@8
-    inputs:
-      instructions: 'Approve to promote to Test'
 
   - bash: |
       oc tag ${BUILD_NAME}:latest ${BUILD_NAME}:test
