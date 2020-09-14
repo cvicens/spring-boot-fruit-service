@@ -94,7 +94,7 @@ jobs:
       else
             echo "${DATABASE_NAME} exists in project ${TEST_PROJECT_NAME}"
       fi
-    name: DeployDatabases
+    name: CheckDatabases
     continueOnError: false
 
   - bash: |
@@ -102,14 +102,14 @@ jobs:
         oc label dc/${DATABASE_NAME} app.kubernetes.io/part-of=fruit-service-app --overwrite=true -n ${DEV_PROJECT_NAME} && \
         oc label dc/${DATABASE_NAME} app.openshift.io/runtime=postgresql --overwrite=true -n ${DEV_PROJECT_NAME} 
     name: DeployDevDatabase
-    condition: eq(variables['DeployDatabases.DevDatabaseDoesntExists'], false)
+    condition: eq(variables['CheckDatabases.DevDatabaseDoesntExists'], false)
 
   - bash: |
         oc new-app -e POSTGRESQL_USER=luke -ePOSTGRESQL_PASSWORD=secret -ePOSTGRESQL_DATABASE=my_data centos/postgresql-10-centos7 --name=${DATABASE_NAME} --as-deployment-config -n ${TEST_PROJECT_NAME}
             oc label dc/${DATABASE_NAME} app.kubernetes.io/part-of=fruit-service-app --overwrite=true -n ${TEST_PROJECT_NAME} && \
             oc label dc/${DATABASE_NAME} app.openshift.io/runtime=postgresql --overwrite=true -n ${TEST_PROJECT_NAME} 
-    name: DeployDevDatabase
-    condition: eq(variables['DeployDatabases.TestDatabaseDoesntExists'], false)
+    name: DeployTestDatabase
+    condition: eq(variables['CheckDatabases.TestDatabaseDoesntExists'], false)
 
 - job: Run
   variables:
