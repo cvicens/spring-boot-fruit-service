@@ -230,20 +230,20 @@ jobs:
     condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
 
   - bash: |
-      if [ -z "`oc get svc ${APP_NAME} -o name -n ${DEV_PROJECT_NAME}`" ]
+      if [ -z "`oc get route ${APP_NAME} -o name -n ${DEV_PROJECT_NAME}`" ]
       then
-            echo "svc ${DevSvcDoesntExists} doesn't exist"
-            echo "##vso[task.setvariable variable=DevSvcDoesntExists;isOutput=true]true"
+            echo "route ${DevRouteDoesntExists} doesn't exist"
+            echo "##vso[task.setvariable variable=DevRouteDoesntExists;isOutput=true]true"
       else
-            echo "svc ${DevSvcDoesntExists} exists"
-            echo "##vso[task.setvariable variable=DevSvcDoesntExists;isOutput=true]false"
+            echo "route ${DevRouteDoesntExists} exists"
+            echo "##vso[task.setvariable variable=DevRouteDoesntExists;isOutput=true]false"
       fi
-    name: CheckDevSvc
+    name: CheckDevRoute
 
   - bash: |
       oc expose svc/${APP_NAME} -n ${DEV_PROJECT_NAME}
     name: ExposeDevSvc
-    condition: eq(variables['CheckDevSvc.DevSvcDoesntExists'], true)
+    condition: eq(variables['CheckDevRoute.DevRouteDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(DEV_PROJECT_NAME)
@@ -284,20 +284,20 @@ jobs:
     condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
 
   - bash: |
-      if [ -z "`oc get svc ${APP_NAME} -o name -n ${TEST_PROJECT_NAME}`" ]
+      if [ -z "`oc get route ${APP_NAME} -o name -n ${TEST_PROJECT_NAME}`" ]
       then
-            echo "svc ${TestSvcDoesntExists} doesn't exist"
-            echo "##vso[task.setvariable variable=TestSvcDoesntExists;isOutput=true]true"
+            echo "route ${APP_NAME} doesn't exist"
+            echo "##vso[task.setvariable variable=TestRouteDoesntExists;isOutput=true]true"
       else
-            echo "svc ${TestSvcDoesntExists} exists"
-            echo "##vso[task.setvariable variable=TestSvcDoesntExists;isOutput=true]false"
+            echo "route ${APP_NAME} exists"
+            echo "##vso[task.setvariable variable=TestRouteDoesntExists;isOutput=true]false"
       fi
-    name: CheckTestSvc
+    name: CheckTestRoute
 
   - bash: |
       oc expose svc/${APP_NAME} -n ${TEST_PROJECT_NAME}
     name: ExposeTestSvc
-    condition: eq(variables['CheckTestSvc.TestSvcDoesntExists'], true)
+    condition: eq(variables['CheckTestRoute.TestRouteDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(TEST_PROJECT_NAME)
