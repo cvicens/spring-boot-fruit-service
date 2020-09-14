@@ -248,7 +248,7 @@ jobs:
     condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
 
   - bash: |
-      oc tag ${BUILD_NAME}:latest ${BUILD_NAME}:test
+      oc tag ${DEV_PROJECT_NAME}/${BUILD_NAME}:latest ${DEV_PROJECT_NAME}/${BUILD_NAME}:test
     name: PromoteToTest
 
   - bash: |
