@@ -10,6 +10,20 @@ pool:
   vmImage: 'ubuntu-latest'
   #vmImage: 'vs2017-win2016'
 
+variables:
+- name: APP_NAME
+  value: fruit-service 
+- name: BUILD_NAME
+  value: $(APP_NAME) 
+- name: BUILD_IMAGE_STREAM
+  value: openshift/java:8 
+- name: POM_VERSION
+  value: 1.0.0
+- name: DEV_PROJECT_NAME
+  value: fruits-app-dev
+- name: TEST_PROJECT_NAME
+  value: fruits-app-test
+
 jobs:
 - job: Prepare
 
@@ -64,6 +78,29 @@ jobs:
     name: echoDevProjectFoundName
   - script: echo $(CheckProjects.TestProjectFoundName)
     name: echoTestProjectFoundName
+
+ - bash: |
+    echo "This is job Prepare."
+    echo "##vso[task.setvariable variable=DevProjectFoundName;isOutput=true]`oc get ns ${DEV_PROJECT_NAME} -o name`"
+    echo "##vso[task.setvariable variable=TestProjectFoundName;isOutput=true]`oc get ns ${TEST_PROJECT_NAME} -o name`"   
+
+    if [ -z "`oc get ns ${DEV_PROJECT_NAME} -o name`" ]
+    then
+          echo "${DEV_PROJECT_NAME} doesn't exist"
+          echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]false"
+    else
+          echo "${DEV_PROJECT_NAME} exists"
+          echo "##vso[task.setvariable variable=DevProjectExists;isOutput=true]true"
+    fi
+    if [ -z "`oc get ns ${TEST_PROJECT_NAME} -o name`" ]
+    then
+          echo "${TEST_PROJECT_NAME} doesn't exist"
+          echo "##vso[task.setvariable variable=TestProjectExists;isOutput=true]false"
+    else
+          echo "${TEST_PROJECT_NAME} exists"
+          echo "##vso[task.setvariable variable=TestProjectExists;isOutput=true]true"
+    fi
+  name: CheckDatabases
 
 - job: Run
   variables:
