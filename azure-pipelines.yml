@@ -179,7 +179,7 @@ jobs:
       openshiftService: 'OCP Cluster 1'
       version: '4.5.9'
       uselocalOc: true
-      cmd: 'new-app --name=$(APP_NAME) -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(DEV_PROJECT_NAME)'
+      cmd: 'new-app --name=$(APP_NAME) $(DEV_PROJECT_NAME)/$(BUILD_NAME):latest -e DB_USERNAME=luke -e DB_PASSWORD=secret -e JAVA_OPTIONS=-Dspring.profiles.active=openshift -l app=${APP_NAME},version=${POM_VERSION},provider=jenkins -n $(DEV_PROJECT_NAME)'
       ignoreFlag: true
     condition: eq(variables['CheckDeployment.DeploymentDoesntExists'], true)
 
