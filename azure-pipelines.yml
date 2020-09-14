@@ -160,7 +160,7 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'test'
-    enabled: false
+    enabled: true
   
   - task: Maven@3
     name: MavenPackage
