@@ -307,7 +307,7 @@ jobs:
 
   - bash: |
       oc label deployment/${APP_NAME} app.kubernetes.io/part-of=${APP_NAME}-app --overwrite=true -n ${TEST_PROJECT_NAME}
-      oc label deployment/${APP_NAME} app.openshift.io/runtime=spring --overwrite=true -n $(DEV_PROJECT_NAME)
+      oc label deployment/${APP_NAME} app.openshift.io/runtime=spring --overwrite=true -n $(TEST_PROJECT_NAME)
       oc annotate deployment/${APP_NAME} app.openshift.io/connects-to=my-database --overwrite=true -n ${TEST_PROJECT_NAME}
     name: AddDeploymentDecorationToTest
     condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
