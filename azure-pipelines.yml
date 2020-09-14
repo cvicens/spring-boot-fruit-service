@@ -230,9 +230,20 @@ jobs:
     condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
 
   - bash: |
+      if [ -z "`oc get svc ${APP_NAME} -o name -n ${DEV_PROJECT_NAME}`" ]
+      then
+            echo "svc ${DevSvcDoesntExists} doesn't exist"
+            echo "##vso[task.setvariable variable=DevSvcDoesntExists;isOutput=true]true"
+      else
+            echo "svc ${DevSvcDoesntExists} exists"
+            echo "##vso[task.setvariable variable=DevSvcDoesntExists;isOutput=true]false"
+      fi
+    name: CheckDevSvc
+
+  - bash: |
       oc expose svc/${APP_NAME} -n ${DEV_PROJECT_NAME}
     name: ExposeDevSvc
-    condition: eq(variables['CheckDevDeployment.DevDeploymentDoesntExists'], true)
+    condition: eq(variables['CheckDevSvc.DevSvcDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(DEV_PROJECT_NAME)
@@ -273,9 +284,20 @@ jobs:
     condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
 
   - bash: |
+      if [ -z "`oc get svc ${APP_NAME} -o name -n ${TEST_PROJECT_NAME}`" ]
+      then
+            echo "svc ${TestSvcDoesntExists} doesn't exist"
+            echo "##vso[task.setvariable variable=TestSvcDoesntExists;isOutput=true]true"
+      else
+            echo "svc ${TestSvcDoesntExists} exists"
+            echo "##vso[task.setvariable variable=TestSvcDoesntExists;isOutput=true]false"
+      fi
+    name: CheckTestSvc
+
+  - bash: |
       oc expose svc/${APP_NAME} -n ${TEST_PROJECT_NAME}
-    name: ExposeTestSvc
-    condition: eq(variables['CheckTestDeployment.TestDeploymentDoesntExists'], true)
+    name: ExposeDevSvc
+    condition: eq(variables['CheckTestSvc.TestSvcDoesntExists'], true)
 
   - bash: |
       oc set probe deployment/${APP_NAME} --liveness --get-url=http://:8080/actuator/health --initial-delay-seconds=180 -n $(TEST_PROJECT_NAME)
